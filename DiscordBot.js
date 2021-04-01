@@ -1,13 +1,25 @@
 const { Client } = require('discord.js');
 require('dotenv').config();
 module.exports = class {
-  constructor(name, token) {
+  constructor(token = process.env.BOT_TOKEN, {
+    name = process.env.BOT_NAME,
+    activity = process.env.BOT_ACTVITY,    
+  } = {}) {
     this.client = new Client();
     this.history = [];
     this.listeners = {};
     this.name = name;
+    this.activity = activity;
     this.env = process.env;
-    this.client.on("ready", () => this.launchEvent("login"));
+    this.client.on("ready", () => {
+      if (this.name) {
+        this.client.user.setUsername(this.name);
+      }
+      if (this.name) {
+        this.client.user.setActivity(this.activity);
+      }
+      this.launchEvent("login")
+    });
     this.client.on("message", msg => this.launchEvent("message", msg));
     this.client.on('guildMemberAdd', user => this.launchEvent("memberJoined", user));
     this.client.on('guildMemberRemove', user => this.launchEvent("memberLeft", user));
@@ -64,6 +76,7 @@ async function onMessage({
   extraData = readFiles('./general/'); // TODO: Change
   type = extraData.type;
   commands = readFiles(commandsFolder, { command: true });
+
   if (!commands["help"]) {
     commands["help"] = {
       description: null,
@@ -109,13 +122,13 @@ async function onMessage({
               desc += ` (${param.optional ? "?" : ""}${param.name})`;
               embed.fields.push({
                 name: param.name,
-                value: `type: ${param.type.join(", ")}${param.optional ? " | optional: true" : ""}`,
+                value: `type: ${param.type.join(", ")}${param.optional ? " | optional" : ""}`,
                 inline: true,
               });
             }
             desc += aliases.length ? `
             
-            \`Aliases: ${aliases.join(", ")} \`` : ""
+\`Aliases: ${aliases.join(", ")} \`` : ""
             embed.description = desc;
           }
         } else {
@@ -185,9 +198,9 @@ async function onMessage({
     const files = fs.readdirSync(path);
     if (!root) {
       let filePath = path.split("/")[2];
-      let rootFile = data[filePath] = require(path + filePath);
-      files.splice(files.indexOf(filePath), 1);
-      if (rootFile.type == "module") {
+      let rootFile = require(path + filePath);
+      console.log(rootFile.type)
+      if (rootFile.type === "module") {
         rootFile.children = [];
         for (file of files) {
           sendFile = require(path + file.split(".js")[0]);
@@ -200,13 +213,13 @@ async function onMessage({
     }
     for (file of files) {
       let fileName = file.split(".js")[0];
-      if (fs.lstatSync(path + file).isDirectory()) readFiles(path + file + "/", { command, root: false });
+      if (fs.lstatSync(path + file).isDirectory()) 
+        data = { ...data, ...readFiles(path + file + "/", { command, root: false }) }
       else {
         if (command) {
           let rootFile = require(path + fileName);
           if (!root) {
-            if (rootFile.type == "module") addFile(rootFile);
-            if (rootFile.type == "hidden") return;
+            if (rootFile.type === "hidden") continue;
           }
           data[fileName] = rootFile;
           addFile(data[fileName])

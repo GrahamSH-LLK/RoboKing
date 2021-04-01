@@ -14,7 +14,6 @@ https://discord.com/oauth2/authorize?client_id=785975271341424691&permissions=8&
 const DiscordBot = require('./DiscordBot');
 const bot = new DiscordBot("RoboKing");
 bot.login(); // Defaults to `process.env.BOT_TOKEN`
-bot.on("login", "./onReady");
 bot.on("message", "", {
   prefix: "r!",
   prefixOnly: "That's Me!"
